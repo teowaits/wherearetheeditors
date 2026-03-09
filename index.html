@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editorial Appointments Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .control-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .control-group.small {
+            flex: 0 0 150px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        input[type="file"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        
+        button {
+            background: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #1976D2;
+        }
+        
+        button.secondary {
+            background: #757575;
+        }
+        
+        button.secondary:hover {
+            background: #616161;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        #map {
+            height: 650px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .info-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        .stat {
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        .stat-label {
+            color: #777;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            color: #333;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .success {
+            background: #e3f2fd;
+            color: #1565C0;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .warning {
+            background: #fff3e0;
+            color: #e65100;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .info {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .file-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .leaflet-popup-content {
+            margin: 10px;
+            min-width: 250px;
+        }
+        
+        .popup-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #1976D2;
+        }
+        
+        .popup-field {
+            margin: 5px 0;
+            font-size: 13px;
+            color: #555;
+        }
+        
+        .popup-field strong {
+            color: #333;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #2196F3;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .geocode-method {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .geocode-method label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        
+        .credits {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #666;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            z-index: 1000;
+        }
+        
+        .credits a {
+            color: #2196F3;
+            text-decoration: none;
+        }
+        
+        .credits a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Editorial Appointments Map Viewer</h1>
+        
+        <div class="info-panel" style="margin-bottom: 20px;">
+            <h2 style="margin-bottom: 15px; color: #333; font-size: 20px;">📖 How to Use</h2>
+            <ol style="line-height: 1.8; color: #555; margin-left: 20px;">
+                <li><strong>Select Geocoding Method:</strong>
+                    <ul style="margin-top: 5px; margin-left: 20px;">
+                        <li>✅ <strong>Built-in Database</strong> (recommended) - Fast, works offline, geocodes 200+ locations instantly</li>
+                        <li><strong>Online Geocoding</strong> - Slower (up to 5 minutes), more accurate, may fail due to browser restrictions</li>
+                    </ul>
+                </li>
+                <li><strong>Download the Editorial Database CSV file</strong> and upload it using the file selector below</li>
+                <li><strong>Wait for geocoding</strong> - Built-in method completes instantly; online method takes several minutes</li>
+                <li><strong>Filter by Location:</strong> Enter a city name in the search box (e.g., "Milan" not "Milan, Italy") and set your desired radius in kilometers</li>
+                <li><strong>Use Additional Filters:</strong> Filter by Journal, Role, Country, or Status to narrow down your results</li>
+                <li><strong>Find Editors & EAB to Visit!</strong> Click on map markers to see full editor details including contact information</li>
+            </ol>
+            <p style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 4px; color: #1565C0;">
+                💡 <strong>Pro Tip:</strong> Start with a city name (not country) for more accurate radius searches. Example: Search "Austin" with 100km radius instead of "Texas".
+            </p>
+        </div>
+        
+        <div class="controls">
+            <div id="message"></div>
+            
+            <div class="control-row">
+                <div class="control-group">
+                    <label for="csvFile">Upload Editorial Appointments CSV</label>
+                    <input type="file" id="csvFile" accept=".csv">
+                    <div class="file-info">Required columns: Editor, Journal, Role, Country, Affiliation (Email and Website optional)</div>
+                </div>
+            </div>
+            
+            <div class="geocode-method">
+                <label>
+                    <input type="radio" name="geocodeMethod" value="builtin" checked>
+                    Use Built-in Database (Fast, works offline)
+                </label>
+                <label>
+                    <input type="radio" name="geocodeMethod" value="online">
+                    Use Online Geocoding (Slow, more accurate, requires internet)
+                </label>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div>Geocoding locations... <span id="progressText">0/0</span></div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+            
+            <div class="control-row">
+                <div class="control-group">
+                    <label for="searchLocation">Search Location (Center Point)</label>
+                    <input type="text" id="searchLocation" placeholder="e.g., Austin, Texas or University of Toronto">
+                </div>
+                
+                <div class="control-group small">
+                    <label for="radius">Radius (km)</label>
+                    <input type="number" id="radius" value="100" min="1" max="20000">
+                </div>
+                
+                <div class="control-group small">
+                    <button id="searchBtn">Search & Filter</button>
+                </div>
+                
+                <div class="control-group small">
+                    <button id="resetBtn" class="secondary">Reset Map</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="map"></div>
+        
+        <div class="info-panel">
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-label">Total Editors</div>
+                    <div class="stat-value" id="totalLocations">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Successfully Geocoded</div>
+                    <div class="stat-value" id="geocodedLocations">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Visible on Map</div>
+                    <div class="stat-value" id="visibleLocations">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Within Search Radius</div>
+                    <div class="stat-value" id="withinRadius">-</div>
+                </div>
+            </div>
+            
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="filterJournal">Filter by Journal</label>
+                    <select id="filterJournal">
+                        <option value="">All Journals</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="filterRole">Filter by Role</label>
+                    <select id="filterRole">
+                        <option value="">All Roles</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="filterCountry">Filter by Country</label>
+                    <select id="filterCountry">
+                        <option value="">All Countries</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="filterStatus">Filter by Status</label>
+                    <select id="filterStatus">
+                        <option value="">All Statuses</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script>
+        // Wait for libraries to load with retry
+        function waitForLibraries(callback, attempt = 0) {
+            if (typeof L !== 'undefined' && typeof Papa !== 'undefined') {
+                // Give an extra moment for markerCluster plugin to attach
+                setTimeout(() => {
+                    if (typeof L.markerClusterGroup !== 'undefined') {
+                        callback();
+                    } else {
+                        console.warn('MarkerCluster not loaded, retrying...');
+                        if (attempt < 50) {
+                            waitForLibraries(callback, attempt + 1);
+                        } else {
+                            // Proceed anyway - we'll handle it
+                            callback();
+                        }
+                    }
+                }, 100);
+            } else if (attempt < 50) { // Try for 5 seconds
+                setTimeout(() => waitForLibraries(callback, attempt + 1), 100);
+            } else {
+                // Show user-friendly error
+                const message = document.getElementById('message');
+                if (message) {
+                    message.className = 'error';
+                    message.innerHTML = '<strong>⚠️ Libraries failed to load.</strong><br>' +
+                        'Please ensure you have an active internet connection and refresh the page.<br>' +
+                        'Required libraries: Leaflet, PapaParse, and Leaflet.markercluster';
+                    message.style.display = 'block';
+                }
+                console.error('Required libraries failed to load from CDN.');
+                console.error('Leaflet available:', typeof L !== 'undefined');
+                console.error('PapaParse available:', typeof Papa !== 'undefined');
+            }
+        }
+        
+        // Start when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            waitForLibraries(initializeApp);
+        });
+        
+        function initializeApp() {
+        let map;
+        let markers = [];
+        let markerClusterGroup; // For clustering overlapping markers
+        let allEditors = [];
+        let radiusCircle = null;
+        let searchMarker = null;
+        let currentFilters = {
+            journal: '',
+            role: '',
+            country: '',
+            status: ''
+        };
+
+        // Built-in geocoding database - MASSIVELY EXPANDED with accurate coordinates
+        const LOCATION_DATABASE = {
+            // === US Universities (West Coast) ===
+            'stanford university': { lat: 37.4275, lon: -122.1697, city: 'Stanford' },
+            'stanford': { lat: 37.4275, lon: -122.1697, city: 'Stanford' },
+            'university of washington': { lat: 47.6553, lon: -122.3035, city: 'Seattle' },
+            'uw': { lat: 47.6553, lon: -122.3035, city: 'Seattle' },
+            'uc san diego': { lat: 32.8801, lon: -117.2340, city: 'San Diego' },
+            'university of california san diego': { lat: 32.8801, lon: -117.2340, city: 'San Diego' },
+            'ucsd': { lat: 32.8801, lon: -117.2340, city: 'San Diego' },
+            'university of california los angeles': { lat: 34.0689, lon: -118.4452, city: 'Los Angeles' },
+            'ucla': { lat: 34.0689, lon: -118.4452, city: 'Los Angeles' },
+            'university of california santa cruz': { lat: 36.9914, lon: -122.0583, city: 'Santa Cruz' },
+            'ucsc': { lat: 36.9914, lon: -122.0583, city: 'Santa Cruz' },
+            'california state university northridge': { lat: 34.2398, lon: -118.5289, city: 'Los Angeles' },
+            'cal state northridge': { lat: 34.2398, lon: -118.5289, city: 'Los Angeles' },
+            'csun': { lat: 34.2398, lon: -118.5289, city: 'Los Angeles' },
+            
+            // === US Universities (East Coast) ===
+            'university of michigan': { lat: 42.2780, lon: -83.7382, city: 'Ann Arbor' },
+            'umich': { lat: 42.2780, lon: -83.7382, city: 'Ann Arbor' },
+            'university of pittsburgh': { lat: 40.4443, lon: -79.9608, city: 'Pittsburgh' },
+            'pitt': { lat: 40.4443, lon: -79.9608, city: 'Pittsburgh' },
+            'stony brook university': { lat: 40.9123, lon: -73.1237, city: 'Stony Brook' },
+            'george washington university': { lat: 38.8997, lon: -77.0486, city: 'Washington DC' },
+            'gwu': { lat: 38.8997, lon: -77.0486, city: 'Washington DC' },
+            'university of pennsylvania': { lat: 39.9522, lon: -75.1932, city: 'Philadelphia' },
+            'upenn': { lat: 39.9522, lon: -75.1932, city: 'Philadelphia' },
+            
+            // === US Universities (Other) ===
+            'university of notre dame': { lat: 41.7001, lon: -86.2379, city: 'Notre Dame' },
+            'university at buffalo': { lat: 43.0015, lon: -78.7870, city: 'Buffalo' },
+            'university of north carolina': { lat: 35.9049, lon: -79.0469, city: 'Chapel Hill' },
+            'unc chapel hill': { lat: 35.9049, lon: -79.0469, city: 'Chapel Hill' },
+            'unc': { lat: 35.9049, lon: -79.0469, city: 'Chapel Hill' },
+            'north carolina state university': { lat: 35.7847, lon: -78.6821, city: 'Raleigh' },
+            'nc state': { lat: 35.7847, lon: -78.6821, city: 'Raleigh' },
+            'ohio state university': { lat: 40.0067, lon: -83.0305, city: 'Columbus' },
+            'osu': { lat: 40.0067, lon: -83.0305, city: 'Columbus' },
+            'georgia institute of technology': { lat: 33.7756, lon: -84.3963, city: 'Atlanta' },
+            'georgia tech': { lat: 33.7756, lon: -84.3963, city: 'Atlanta' },
+            'university of colorado boulder': { lat: 40.0076, lon: -105.2659, city: 'Boulder' },
+            'university of tennessee knoxville': { lat: 35.9544, lon: -83.9295, city: 'Knoxville' },
+            'university of arkansas': { lat: 36.0681, lon: -94.1748, city: 'Fayetteville' },
+            'rochester institute of technology': { lat: 43.0848, lon: -77.6744, city: 'Rochester' },
+            'rit': { lat: 43.0848, lon: -77.6744, city: 'Rochester' },
+            
+            // === US Research Labs ===
+            'argonne national laboratory': { lat: 41.7099, lon: -87.9796, city: 'Chicago' },
+            'national energy technology laboratory': { lat: 40.3678, lon: -79.9594, city: 'Pittsburgh' },
+            'u.s. naval research laboratory': { lat: 38.8227, lon: -77.0145, city: 'Washington DC' },
+            
+            // === China Universities ===
+            'university of science and technology of china': { lat: 31.8382, lon: 117.2588, city: 'Hefei' },
+            'ustc': { lat: 31.8382, lon: 117.2588, city: 'Hefei' },
+            'fudan university': { lat: 31.2989, lon: 121.5033, city: 'Shanghai' },
+            'beijing institute of technology': { lat: 39.9611, lon: 116.3128, city: 'Beijing' },
+            'bit': { lat: 39.9611, lon: 116.3128, city: 'Beijing' },
+            'university of chinese academy of sciences': { lat: 40.4074, lon: 116.6829, city: 'Beijing' },
+            'ucas': { lat: 40.4074, lon: 116.6829, city: 'Beijing' },
+            'tianjin university': { lat: 39.1089, lon: 117.1801, city: 'Tianjin' },
+            'tju': { lat: 39.1089, lon: 117.1801, city: 'Tianjin' },
+            'chinese academy of sciences': { lat: 39.9042, lon: 116.4074, city: 'Beijing' },
+            'cas': { lat: 39.9042, lon: 116.4074, city: 'Beijing' },
+            'shanghai jiao tong university': { lat: 31.0262, lon: 121.4371, city: 'Shanghai' },
+            'sjtu': { lat: 31.0262, lon: 121.4371, city: 'Shanghai' },
+            'hangzhou dianzi university': { lat: 30.3167, lon: 120.3667, city: 'Hangzhou' },
+            'peking university': { lat: 39.9925, lon: 116.3167, city: 'Beijing' },
+            'pku': { lat: 39.9925, lon: 116.3167, city: 'Beijing' },
+            'beihang university': { lat: 39.9817, lon: 116.3444, city: 'Beijing' },
+            'buaa': { lat: 39.9817, lon: 116.3444, city: 'Beijing' },
+            'nanjing university': { lat: 32.1156, lon: 118.9562, city: 'Nanjing' },
+            'nju': { lat: 32.1156, lon: 118.9562, city: 'Nanjing' },
+            'sun yat sen university': { lat: 23.0942, lon: 113.3116, city: 'Guangzhou' },
+            'sysu': { lat: 23.0942, lon: 113.3116, city: 'Guangzhou' },
+            'china university of geosciences': { lat: 30.5255, lon: 114.3560, city: 'Wuhan' },
+            'south china university of technology': { lat: 23.1485, lon: 113.3439, city: 'Guangzhou' },
+            'scut': { lat: 23.1485, lon: 113.3439, city: 'Guangzhou' },
+            'beijing normal university': { lat: 39.9619, lon: 116.3662, city: 'Beijing' },
+            'bnu': { lat: 39.9619, lon: 116.3662, city: 'Beijing' },
+            'shanghai university': { lat: 31.2972, lon: 121.5033, city: 'Shanghai' },
+            'northwestern polytechnical university': { lat: 34.0364, lon: 108.7633, city: "Xi'an" },
+            'nwpu': { lat: 34.0364, lon: 108.7633, city: "Xi'an" },
+            
+            // === Japan Universities ===
+            'tokyo university of agriculture and technology': { lat: 35.6839, lon: 139.4812, city: 'Tokyo' },
+            'tuat': { lat: 35.6839, lon: 139.4812, city: 'Tokyo' },
+            'riken': { lat: 34.9792, lon: 135.9612, city: 'Kobe' },
+            'keio university': { lat: 35.6519, lon: 139.5391, city: 'Tokyo' },
+            'university of tokyo': { lat: 35.7128, lon: 139.7628, city: 'Tokyo' },
+            'u tokyo': { lat: 35.7128, lon: 139.7628, city: 'Tokyo' },
+            'pohang university of science and technology': { lat: 36.0140, lon: 129.3256, city: 'Pohang' },
+            'postech': { lat: 36.0140, lon: 129.3256, city: 'Pohang' },
+            
+            // === Canada Universities ===
+            'university of toronto': { lat: 43.6629, lon: -79.3957, city: 'Toronto' },
+            'uoft': { lat: 43.6629, lon: -79.3957, city: 'Toronto' },
+            'university of toronto scarborough': { lat: 43.7843, lon: -79.1875, city: 'Toronto' },
+            'utsc': { lat: 43.7843, lon: -79.1875, city: 'Toronto' },
+            'university of ottawa': { lat: 45.4215, lon: -75.6830, city: 'Ottawa' },
+            
+            // === UK Universities ===
+            'university college london': { lat: 51.5246, lon: -0.1340, city: 'London' },
+            'ucl': { lat: 51.5246, lon: -0.1340, city: 'London' },
+            'university of nottingham': { lat: 52.9400, lon: -1.1248, city: 'Nottingham' },
+            'university of cambridge': { lat: 52.2053, lon: 0.1218, city: 'Cambridge' },
+            'cambridge': { lat: 52.2053, lon: 0.1218, city: 'Cambridge' },
+            'cardiff university': { lat: 51.4875, lon: -3.1791, city: 'Cardiff' },
+            'university of strathclyde': { lat: 55.8620, lon: -4.2434, city: 'Glasgow' },
+            
+            // === ITALY Universities (FIXED COORDINATES) ===
+            'politecnico di milano': { lat: 45.4784, lon: 9.2290, city: 'Milan' }, // Milan city center
+            'polimi': { lat: 45.4784, lon: 9.2290, city: 'Milan' },
+            'scuola superiore santanna': { lat: 43.7167, lon: 10.4000, city: 'Pisa' },
+            'santanna pisa': { lat: 43.7167, lon: 10.4000, city: 'Pisa' },
+            'sissa': { lat: 45.6494, lon: 13.7768, city: 'Trieste' }, // International School for Advanced Studies
+            'università federico ii': { lat: 40.8518, lon: 14.2681, city: 'Naples' },
+            'university of naples': { lat: 40.8518, lon: 14.2681, city: 'Naples' },
+            'istituto nazionale di ricerca metrologica': { lat: 45.0131, lon: 7.6600, city: 'Turin' },
+            'inrim': { lat: 45.0131, lon: 7.6600, city: 'Turin' },
+            'university of pavia': { lat: 45.1847, lon: 9.1582, city: 'Pavia' },
+            
+            // === Other Europe Universities ===
+            'public university of navarre': { lat: 42.7985, lon: -1.6379, city: 'Pamplona' },
+            'universiteit gent': { lat: 51.0500, lon: 3.7167, city: 'Ghent' },
+            'ghent university': { lat: 51.0500, lon: 3.7167, city: 'Ghent' },
+            'ugent': { lat: 51.0500, lon: 3.7167, city: 'Ghent' },
+            'aarhus university': { lat: 56.1680, lon: 10.2030, city: 'Aarhus' },
+            'university of silesia': { lat: 50.2861, lon: 18.6744, city: 'Katowice' },
+            'université de technologie de troyes': { lat: 48.2970, lon: 4.0685, city: 'Troyes' },
+            'utt': { lat: 48.2970, lon: 4.0685, city: 'Troyes' },
+            'cnrs': { lat: 48.8566, lon: 2.3522, city: 'Paris' },
+            'university of groningen': { lat: 53.2194, lon: 6.5665, city: 'Groningen' },
+            'trinity college dublin': { lat: 53.3438, lon: -6.2546, city: 'Dublin' },
+            'tcd': { lat: 53.3438, lon: -6.2546, city: 'Dublin' },
+            'catalan institute of nanoscience': { lat: 41.4932, lon: 2.1076, city: 'Barcelona' },
+            'icn2': { lat: 41.4932, lon: 2.1076, city: 'Barcelona' },
+            'max planck institute': { lat: 51.5336, lon: 9.9363, city: 'Göttingen' },
+            
+            // === Asia Pacific ===
+            'australian national university': { lat: -35.2777, lon: 149.1185, city: 'Canberra' },
+            'anu': { lat: -35.2777, lon: 149.1185, city: 'Canberra' },
+            'pusan national university': { lat: 35.2328, lon: 129.0825, city: 'Busan' },
+            'pnu': { lat: 35.2328, lon: 129.0825, city: 'Busan' },
+            'singapore university of technology and design': { lat: 1.3410, lon: 103.9632, city: 'Singapore' },
+            'sutd': { lat: 1.3410, lon: 103.9632, city: 'Singapore' },
+            'nanyang technological university': { lat: 1.3483, lon: 103.6831, city: 'Singapore' },
+            'ntu singapore': { lat: 1.3483, lon: 103.6831, city: 'Singapore' },
+            'national university of singapore': { lat: 1.2966, lon: 103.7764, city: 'Singapore' },
+            'nus': { lat: 1.2966, lon: 103.7764, city: 'Singapore' },
+            'university of queensland': { lat: -27.4975, lon: 153.0137, city: 'Brisbane' },
+            'uq': { lat: -27.4975, lon: 153.0137, city: 'Brisbane' },
+            'rmit university melbourne': { lat: -37.8083, lon: 144.9639, city: 'Melbourne' },
+            'rmit': { lat: -37.8083, lon: 144.9639, city: 'Melbourne' },
+            'university of western australia': { lat: -31.9800, lon: 115.8177, city: 'Perth' },
+            'uwa': { lat: -31.9800, lon: 115.8177, city: 'Perth' },
+            'city university of hong kong': { lat: 22.3364, lon: 114.2655, city: 'Hong Kong' },
+            'cityu': { lat: 22.3364, lon: 114.2655, city: 'Hong Kong' },
+            
+            // === Switzerland ===
+            'cern': { lat: 46.2333, lon: 6.0557, city: 'Geneva' },
+            'european organization for nuclear research': { lat: 46.2333, lon: 6.0557, city: 'Geneva' },
+            'epfl': { lat: 46.5191, lon: 6.5668, city: 'Lausanne' },
+            'ecole polytechnique federale de lausanne': { lat: 46.5191, lon: 6.5668, city: 'Lausanne' },
+            'eth zurich': { lat: 47.3769, lon: 8.5417, city: 'Zurich' },
+            'eidgenossische technische hochschule zurich': { lat: 47.3769, lon: 8.5417, city: 'Zurich' },
+            'university of zurich': { lat: 47.3744, lon: 8.5506, city: 'Zurich' },
+            'uzh': { lat: 47.3744, lon: 8.5506, city: 'Zurich' },
+            'university of geneva': { lat: 46.1991, lon: 6.1419, city: 'Geneva' },
+            'university of basel': { lat: 47.5596, lon: 7.5886, city: 'Basel' },
+            'university of bern': { lat: 46.9512, lon: 7.4394, city: 'Bern' },
+            'psi': { lat: 47.5362, lon: 8.2183, city: 'Villigen' },
+            'paul scherrer institute': { lat: 47.5362, lon: 8.2183, city: 'Villigen' },
+            
+            // === Germany (Research Centers) ===
+            'technical university of munich': { lat: 48.1497, lon: 11.5676, city: 'Munich' },
+            'tum': { lat: 48.1497, lon: 11.5676, city: 'Munich' },
+            'ludwig maximilian university': { lat: 48.1507, lon: 11.5809, city: 'Munich' },
+            'lmu munich': { lat: 48.1507, lon: 11.5809, city: 'Munich' },
+            'heidelberg university': { lat: 49.4101, lon: 8.6908, city: 'Heidelberg' },
+            'humboldt university': { lat: 52.5200, lon: 13.4050, city: 'Berlin' },
+            'free university of berlin': { lat: 52.4538, lon: 13.2897, city: 'Berlin' },
+            'rwth aachen': { lat: 50.7802, lon: 6.0738, city: 'Aachen' },
+            'karlsruhe institute of technology': { lat: 49.0094, lon: 8.4044, city: 'Karlsruhe' },
+            'kit': { lat: 49.0094, lon: 8.4044, city: 'Karlsruhe' },
+            
+            // === France (Research Centers) ===
+            'sorbonne university': { lat: 48.8467, lon: 2.3563, city: 'Paris' },
+            'sorbonne': { lat: 48.8467, lon: 2.3563, city: 'Paris' },
+            'ecole polytechnique': { lat: 48.7138, lon: 2.2080, city: 'Palaiseau' },
+            'ecole normale superieure': { lat: 48.8435, lon: 2.3455, city: 'Paris' },
+            'ens paris': { lat: 48.8435, lon: 2.3455, city: 'Paris' },
+            'universite paris saclay': { lat: 48.7010, lon: 2.1745, city: 'Paris' },
+            'paris saclay': { lat: 48.7010, lon: 2.1745, city: 'Paris' },
+            
+            // === Netherlands (Research Centers) ===
+            'delft university of technology': { lat: 52.0023, lon: 4.3731, city: 'Delft' },
+            'tu delft': { lat: 52.0023, lon: 4.3731, city: 'Delft' },
+            'leiden university': { lat: 52.1579, lon: 4.4864, city: 'Leiden' },
+            'utrecht university': { lat: 52.0893, lon: 5.1121, city: 'Utrecht' },
+            'eindhoven university of technology': { lat: 51.4478, lon: 5.4901, city: 'Eindhoven' },
+            'tue': { lat: 51.4478, lon: 5.4901, city: 'Eindhoven' },
+            
+            // === Spain (additional) ===
+            'autonomous university of barcelona': { lat: 41.5004, lon: 2.1091, city: 'Barcelona' },
+            'uab': { lat: 41.5004, lon: 2.1091, city: 'Barcelona' },
+            'university of barcelona': { lat: 41.3851, lon: 2.1734, city: 'Barcelona' },
+            'complutense university of madrid': { lat: 40.4497, lon: -3.7280, city: 'Madrid' },
+            'autonomous university of madrid': { lat: 40.5447, lon: -3.6893, city: 'Madrid' },
+            
+            // === Scandinavia ===
+            'karolinska institute': { lat: 59.3508, lon: 18.0294, city: 'Stockholm' },
+            'ki': { lat: 59.3508, lon: 18.0294, city: 'Stockholm' },
+            'kth royal institute of technology': { lat: 59.3499, lon: 18.0686, city: 'Stockholm' },
+            'kth': { lat: 59.3499, lon: 18.0686, city: 'Stockholm' },
+            'lund university': { lat: 55.7104, lon: 13.2091, city: 'Lund' },
+            'uppsala university': { lat: 59.8586, lon: 17.6389, city: 'Uppsala' },
+            'university of copenhagen': { lat: 55.6820, lon: 12.5710, city: 'Copenhagen' },
+            'ku copenhagen': { lat: 55.6820, lon: 12.5710, city: 'Copenhagen' },
+            'technical university of denmark': { lat: 55.7860, lon: 12.5220, city: 'Copenhagen' },
+            'dtu': { lat: 55.7860, lon: 12.5220, city: 'Copenhagen' },
+            'university of oslo': { lat: 59.9402, lon: 10.7220, city: 'Oslo' },
+            'norwegian university of science and technology': { lat: 63.4182, lon: 10.4017, city: 'Trondheim' },
+            'ntnu': { lat: 63.4182, lon: 10.4017, city: 'Trondheim' },
+            
+            // === Austria ===
+            'university of vienna': { lat: 48.2138, lon: 16.3609, city: 'Vienna' },
+            'vienna university of technology': { lat: 48.1987, lon: 16.3694, city: 'Vienna' },
+            'tu wien': { lat: 48.1987, lon: 16.3694, city: 'Vienna' },
+            
+            // === Belgium (additional) ===
+            'ku leuven': { lat: 50.8644, lon: 4.6778, city: 'Leuven' },
+            'katholieke universiteit leuven': { lat: 50.8644, lon: 4.6778, city: 'Leuven' },
+            'vrije universiteit brussel': { lat: 50.8210, lon: 4.3990, city: 'Brussels' },
+            'vub': { lat: 50.8210, lon: 4.3990, city: 'Brussels' },
+            
+            // === Italy (additional comprehensive) ===
+            'university of brescia': { lat: 45.5416, lon: 10.2118, city: 'Brescia' },
+            'universita di brescia': { lat: 45.5416, lon: 10.2118, city: 'Brescia' },
+            'university of padova': { lat: 45.4064, lon: 11.8768, city: 'Padua' },
+            'university of padua': { lat: 45.4064, lon: 11.8768, city: 'Padua' },
+            'universita di padova': { lat: 45.4064, lon: 11.8768, city: 'Padua' },
+            'university of bologna': { lat: 44.4949, lon: 11.3426, city: 'Bologna' },
+            'university of rome': { lat: 41.9028, lon: 12.4964, city: 'Rome' },
+            'sapienza university': { lat: 41.9028, lon: 12.4964, city: 'Rome' },
+            'university of florence': { lat: 43.7792, lon: 11.2462, city: 'Florence' },
+            'university of turin': { lat: 45.0703, lon: 7.6869, city: 'Turin' },
+            'university of genoa': { lat: 44.4184, lon: 8.9331, city: 'Genoa' },
+            'istituto italiano di tecnologia': { lat: 44.4056, lon: 8.9463, city: 'Genoa' },
+            'iit genoa': { lat: 44.4056, lon: 8.9463, city: 'Genoa' },
+            
+            // === Canada (additional) ===
+            'university of british columbia': { lat: 49.2606, lon: -123.2460, city: 'Vancouver' },
+            'ubc': { lat: 49.2606, lon: -123.2460, city: 'Vancouver' },
+            'university of waterloo': { lat: 43.4723, lon: -80.5449, city: 'Waterloo' },
+            'mcgill university': { lat: 45.5048, lon: -73.5772, city: 'Montreal' },
+            'university of alberta': { lat: 53.5232, lon: -113.5263, city: 'Edmonton' },
+            
+            // === China (additional including North China Electric Power) ===
+            'north china electric power university': { lat: 40.0785, lon: 116.3207, city: 'Beijing' },
+            'ncepu': { lat: 40.0785, lon: 116.3207, city: 'Beijing' },
+            'tsinghua university': { lat: 39.9997, lon: 116.3267, city: 'Beijing' },
+            'zhejiang university': { lat: 30.2636, lon: 120.1194, city: 'Hangzhou' },
+            'wuhan university': { lat: 30.5363, lon: 114.3593, city: 'Wuhan' },
+            'harbin institute of technology': { lat: 45.7069, lon: 126.6289, city: 'Harbin' },
+            'hit china': { lat: 45.7069, lon: 126.6289, city: 'Harbin' },
+            
+            // === India ===
+            'indian institute of science education and research kolkata': { lat: 22.9547, lon: 88.5312, city: 'Kolkata' },
+            'iiser kolkata': { lat: 22.9547, lon: 88.5312, city: 'Kolkata' },
+            'indian institute of science education and research mohali': { lat: 30.6656, lon: 76.7292, city: 'Mohali' },
+            'iiser mohali': { lat: 30.6656, lon: 76.7292, city: 'Mohali' },
+            'savitribai phule pune university': { lat: 18.5479, lon: 73.8260, city: 'Pune' },
+            'iit kharagpur': { lat: 22.3193, lon: 87.3103, city: 'Kharagpur' },
+            
+            // === South America ===
+            'university of sao paulo': { lat: -23.5558, lon: -46.7319, city: 'São Paulo' },
+            'usp': { lat: -23.5558, lon: -46.7319, city: 'São Paulo' },
+            
+            // === Africa ===
+            'university of the witwatersrand': { lat: -26.1929, lon: 28.0305, city: 'Johannesburg' },
+            'wits': { lat: -26.1929, lon: 28.0305, city: 'Johannesburg' }
+        };
+        
+        // Countries (ONLY used as last resort fallback)
+        const COUNTRY_FALLBACK = {
+            'usa': { lat: 37.0902, lon: -95.7129 },
+            'united states': { lat: 37.0902, lon: -95.7129 },
+            'china': { lat: 35.8617, lon: 104.1954 },
+            'canada': { lat: 56.1304, lon: -106.3468 },
+            'japan': { lat: 36.2048, lon: 138.2529 },
+            'spain': { lat: 40.4637, lon: -3.7492 },
+            'italy': { lat: 41.8719, lon: 12.5674 },
+            'india': { lat: 20.5937, lon: 78.9629 },
+            'australia': { lat: -25.2744, lon: 133.7751 },
+            'united kingdom': { lat: 55.3781, lon: -3.4360 },
+            'south korea': { lat: 35.9078, lon: 127.7669 },
+            'korea': { lat: 35.9078, lon: 127.7669 },
+            'germany': { lat: 51.1657, lon: 10.4515 },
+            'france': { lat: 46.2276, lon: 2.2137 },
+            'belgium': { lat: 50.5039, lon: 4.4699 },
+            'denmark': { lat: 56.2639, lon: 9.5018 },
+            'poland': { lat: 51.9194, lon: 19.1451 },
+            'singapore': { lat: 1.3521, lon: 103.8198 },
+            'netherlands': { lat: 52.1326, lon: 5.2913 },
+            'the netherlands': { lat: 52.1326, lon: 5.2913 },
+            'switzerland': { lat: 46.8182, lon: 8.2275 },
+            'austria': { lat: 47.5162, lon: 14.5501 },
+            'sweden': { lat: 60.1282, lon: 18.6435 },
+            'norway': { lat: 60.4720, lon: 8.4689 },
+            'ireland': { lat: 53.4129, lon: -8.2439 },
+            'brazil': { lat: -14.2350, lon: -51.9253 },
+            'south africa': { lat: -30.5595, lon: 22.9375 },
+            'hong kong': { lat: 22.3193, lon: 114.1694 }
+        };
+        
+        // Email domain to location mapping (EXPANDED)
+        const EMAIL_DOMAIN_HINTS = {
+            // US Universities
+            'stanford.edu': { lat: 37.4275, lon: -122.1697, name: 'Stanford' },
+            'uw.edu': { lat: 47.6553, lon: -122.3035, name: 'University of Washington' },
+            'umich.edu': { lat: 42.2780, lon: -83.7382, name: 'University of Michigan' },
+            'pitt.edu': { lat: 40.4443, lon: -79.9608, name: 'University of Pittsburgh' },
+            'stonybrook.edu': { lat: 40.9123, lon: -73.1237, name: 'Stony Brook' },
+            'csun.edu': { lat: 34.2398, lon: -118.5289, name: 'Cal State Northridge' },
+            'ucsd.edu': { lat: 32.8801, lon: -117.2340, name: 'UC San Diego' },
+            'eng.ucsd.edu': { lat: 32.8801, lon: -117.2340, name: 'UC San Diego' },
+            'ucla.edu': { lat: 34.0689, lon: -118.4452, name: 'UCLA' },
+            'ucsc.edu': { lat: 36.9914, lon: -122.0583, name: 'UC Santa Cruz' },
+            'gwu.edu': { lat: 38.8997, lon: -77.0486, name: 'George Washington' },
+            'upenn.edu': { lat: 39.9522, lon: -75.1932, name: 'UPenn' },
+            'nd.edu': { lat: 41.7001, lon: -86.2379, name: 'Notre Dame' },
+            'buffalo.edu': { lat: 43.0015, lon: -78.7870, name: 'Buffalo' },
+            'unc.edu': { lat: 35.9049, lon: -79.0469, name: 'UNC Chapel Hill' },
+            'ncsu.edu': { lat: 35.7847, lon: -78.6821, name: 'NC State' },
+            'osu.edu': { lat: 40.0067, lon: -83.0305, name: 'Ohio State' },
+            'gatech.edu': { lat: 33.7756, lon: -84.3963, name: 'Georgia Tech' },
+            'colorado.edu': { lat: 40.0076, lon: -105.2659, name: 'CU Boulder' },
+            'utk.edu': { lat: 35.9544, lon: -83.9295, name: 'Tennessee' },
+            'uark.edu': { lat: 36.0681, lon: -94.1748, name: 'Arkansas' },
+            'rit.edu': { lat: 43.0848, lon: -77.6744, name: 'RIT' },
+            'anl.gov': { lat: 41.7099, lon: -87.9796, name: 'Argonne' },
+            
+            // China Universities
+            'ustc.edu.cn': { lat: 31.8382, lon: 117.2588, name: 'USTC' },
+            'fudan.edu.cn': { lat: 31.2989, lon: 121.5033, name: 'Fudan' },
+            'bit.edu.cn': { lat: 39.9611, lon: 116.3128, name: 'Beijing Tech' },
+            'tju.edu.cn': { lat: 39.1089, lon: 117.1801, name: 'Tianjin' },
+            'sjtu.edu.cn': { lat: 31.0262, lon: 121.4371, name: 'Shanghai Jiao Tong' },
+            'pku.edu.cn': { lat: 39.9925, lon: 116.3167, name: 'Peking' },
+            'buaa.edu.cn': { lat: 39.9817, lon: 116.3444, name: 'Beihang' },
+            'nju.edu.cn': { lat: 32.1156, lon: 118.9562, name: 'Nanjing' },
+            'sysu.edu.cn': { lat: 23.0942, lon: 113.3116, name: 'Sun Yat-sen' },
+            'cug.edu.cn': { lat: 30.5255, lon: 114.3560, name: 'China Geosciences' },
+            'scut.edu.cn': { lat: 23.1485, lon: 113.3439, name: 'South China Tech' },
+            'bnu.edu.cn': { lat: 39.9619, lon: 116.3662, name: 'Beijing Normal' },
+            'shu.edu.cn': { lat: 31.2972, lon: 121.5033, name: 'Shanghai' },
+            'nwpu.edu.cn': { lat: 34.0364, lon: 108.7633, name: 'Northwestern Poly' },
+            'nanoctr.cn': { lat: 39.9842, lon: 116.3267, name: 'Nano Center' },
+            'ncepu.edu.cn': { lat: 40.0785, lon: 116.3207, name: 'North China Electric Power' },
+            'tsinghua.edu.cn': { lat: 39.9997, lon: 116.3267, name: 'Tsinghua' },
+            'zju.edu.cn': { lat: 30.2636, lon: 120.1194, name: 'Zhejiang' },
+            'whu.edu.cn': { lat: 30.5363, lon: 114.3593, name: 'Wuhan' },
+            'hit.edu.cn': { lat: 45.7069, lon: 126.6289, name: 'Harbin Tech' },
+            
+            // Japan
+            'tuat.ac.jp': { lat: 35.6839, lon: 139.4812, name: 'Tokyo Ag Tech' },
+            'riken.jp': { lat: 34.9792, lon: 135.9612, name: 'RIKEN' },
+            'keio.ac.jp': { lat: 35.6519, lon: 139.5391, name: 'Keio' },
+            'u-tokyo.ac.jp': { lat: 35.7128, lon: 139.7628, name: 'Tokyo' },
+            't.u-tokyo.ac.jp': { lat: 35.7128, lon: 139.7628, name: 'Tokyo' },
+            
+            // Korea
+            'postech.ac.kr': { lat: 36.0140, lon: 129.3256, name: 'POSTECH' },
+            'pusan.ac.kr': { lat: 35.2328, lon: 129.0825, name: 'Pusan' },
+            
+            // Canada
+            'utoronto.ca': { lat: 43.6629, lon: -79.3957, name: 'Toronto' },
+            'uottawa.ca': { lat: 45.4215, lon: -75.6830, name: 'Ottawa' },
+            'ubc.ca': { lat: 49.2606, lon: -123.2460, name: 'UBC Vancouver' },
+            'uwaterloo.ca': { lat: 43.4723, lon: -80.5449, name: 'Waterloo' },
+            'mcgill.ca': { lat: 45.5048, lon: -73.5772, name: 'McGill' },
+            'ualberta.ca': { lat: 53.5232, lon: -113.5263, name: 'Alberta' },
+            
+            // UK
+            'ucl.ac.uk': { lat: 51.5246, lon: -0.1340, name: 'UCL' },
+            'cam.ac.uk': { lat: 52.2053, lon: 0.1218, name: 'Cambridge' },
+            'cardiff.ac.uk': { lat: 51.4875, lon: -3.1791, name: 'Cardiff' },
+            'strath.ac.uk': { lat: 55.8620, lon: -4.2434, name: 'Strathclyde' },
+            
+            // Italy
+            'polimi.it': { lat: 45.4784, lon: 9.2290, name: 'Politecnico Milano' },
+            'santannapisa.it': { lat: 43.7167, lon: 10.4000, name: "Sant'Anna Pisa" },
+            'sissa.it': { lat: 45.6494, lon: 13.7768, name: 'SISSA Trieste' },
+            'unina.it': { lat: 40.8518, lon: 14.2681, name: 'Naples' },
+            'inrim.it': { lat: 45.0131, lon: 7.6600, name: 'INRIM Turin' },
+            'unipv.it': { lat: 45.1847, lon: 9.1582, name: 'Pavia' },
+            'unibs.it': { lat: 45.5416, lon: 10.2118, name: 'Brescia' },
+            'unipd.it': { lat: 45.4064, lon: 11.8768, name: 'Padua' },
+            'unibo.it': { lat: 44.4949, lon: 11.3426, name: 'Bologna' },
+            'uniroma1.it': { lat: 41.9028, lon: 12.4964, name: 'Rome Sapienza' },
+            'unifi.it': { lat: 43.7792, lon: 11.2462, name: 'Florence' },
+            'unito.it': { lat: 45.0703, lon: 7.6869, name: 'Turin' },
+            'unige.it': { lat: 44.4184, lon: 8.9331, name: 'Genoa' },
+            'iit.it': { lat: 44.4056, lon: 8.9463, name: 'IIT Genoa' },
+            
+            // Other Europe
+            'cern.ch': { lat: 46.2333, lon: 6.0557, name: 'CERN Geneva' },
+            'epfl.ch': { lat: 46.5191, lon: 6.5668, name: 'EPFL Lausanne' },
+            'ethz.ch': { lat: 47.3769, lon: 8.5417, name: 'ETH Zurich' },
+            'uzh.ch': { lat: 47.3744, lon: 8.5506, name: 'Univ Zurich' },
+            'unige.ch': { lat: 46.1991, lon: 6.1419, name: 'Geneva' },
+            'unibas.ch': { lat: 47.5596, lon: 7.5886, name: 'Basel' },
+            'psi.ch': { lat: 47.5362, lon: 8.2183, name: 'PSI' },
+            'tum.de': { lat: 48.1497, lon: 11.5676, name: 'TU Munich' },
+            'lmu.de': { lat: 48.1507, lon: 11.5809, name: 'LMU Munich' },
+            'uni-heidelberg.de': { lat: 49.4101, lon: 8.6908, name: 'Heidelberg' },
+            'hu-berlin.de': { lat: 52.5200, lon: 13.4050, name: 'Humboldt' },
+            'fu-berlin.de': { lat: 52.4538, lon: 13.2897, name: 'FU Berlin' },
+            'rwth-aachen.de': { lat: 50.7802, lon: 6.0738, name: 'RWTH Aachen' },
+            'kit.edu': { lat: 49.0094, lon: 8.4044, name: 'KIT Karlsruhe' },
+            'sorbonne-universite.fr': { lat: 48.8467, lon: 2.3563, name: 'Sorbonne' },
+            'polytechnique.edu': { lat: 48.7138, lon: 2.2080, name: 'Ecole Polytechnique' },
+            'ens.fr': { lat: 48.8435, lon: 2.3455, name: 'ENS Paris' },
+            'universite-paris-saclay.fr': { lat: 48.7010, lon: 2.1745, name: 'Paris Saclay' },
+            'tudelft.nl': { lat: 52.0023, lon: 4.3731, name: 'TU Delft' },
+            'leidenuniv.nl': { lat: 52.1579, lon: 4.4864, name: 'Leiden' },
+            'uu.nl': { lat: 52.0893, lon: 5.1121, name: 'Utrecht' },
+            'tue.nl': { lat: 51.4478, lon: 5.4901, name: 'TU Eindhoven' },
+            'uab.cat': { lat: 41.5004, lon: 2.1091, name: 'UAB Barcelona' },
+            'ub.edu': { lat: 41.3851, lon: 2.1734, name: 'Barcelona' },
+            'ucm.es': { lat: 40.4497, lon: -3.7280, name: 'Complutense Madrid' },
+            'uam.es': { lat: 40.5447, lon: -3.6893, name: 'Autonomous Madrid' },
+            'ki.se': { lat: 59.3508, lon: 18.0294, name: 'Karolinska' },
+            'kth.se': { lat: 59.3499, lon: 18.0686, name: 'KTH Stockholm' },
+            'lu.se': { lat: 55.7104, lon: 13.2091, name: 'Lund' },
+            'uu.se': { lat: 59.8586, lon: 17.6389, name: 'Uppsala' },
+            'ku.dk': { lat: 55.6820, lon: 12.5710, name: 'Copenhagen' },
+            'dtu.dk': { lat: 55.7860, lon: 12.5220, name: 'DTU' },
+            'uio.no': { lat: 59.9402, lon: 10.7220, name: 'Oslo' },
+            'ntnu.no': { lat: 63.4182, lon: 10.4017, name: 'NTNU' },
+            'univie.ac.at': { lat: 48.2138, lon: 16.3609, name: 'Vienna' },
+            'tuwien.ac.at': { lat: 48.1987, lon: 16.3694, name: 'TU Wien' },
+            'kuleuven.be': { lat: 50.8644, lon: 4.6778, name: 'KU Leuven' },
+            'vub.be': { lat: 50.8210, lon: 4.3990, name: 'VUB Brussels' },
+            
+            // Other domains
+            'ugent.be': { lat: 51.0500, lon: 3.7167, name: 'Ghent' },
+            'au.dk': { lat: 56.1680, lon: 10.2030, name: 'Aarhus' },
+            'utt.fr': { lat: 48.2970, lon: 4.0685, name: 'UTT France' },
+            'rug.nl': { lat: 53.2194, lon: 6.5665, name: 'Groningen' },
+            'tcd.ie': { lat: 53.3438, lon: -6.2546, name: 'Trinity Dublin' },
+            'icn2.cat': { lat: 41.4932, lon: 2.1076, name: 'ICN2 Barcelona' },
+            'mpg.de': { lat: 51.5336, lon: 9.9363, name: 'Max Planck' },
+            'us.edu.pl': { lat: 50.2861, lon: 18.6744, name: 'Silesia' },
+            
+            // Asia Pacific
+            'anu.edu.au': { lat: -35.2777, lon: 149.1185, name: 'ANU' },
+            'sutd.edu.sg': { lat: 1.3410, lon: 103.9632, name: 'SUTD' },
+            'ntu.edu.sg': { lat: 1.3483, lon: 103.6831, name: 'NTU Singapore' },
+            'nus.edu.sg': { lat: 1.2966, lon: 103.7764, name: 'NUS' },
+            'uq.edu.au': { lat: -27.4975, lon: 153.0137, name: 'Queensland' },
+            'rmit.edu.au': { lat: -37.8083, lon: 144.9639, name: 'RMIT' },
+            'uwa.edu.au': { lat: -31.9800, lon: 115.8177, name: 'Western Australia' },
+            'cityu.edu.hk': { lat: 22.3364, lon: 114.2655, name: 'CityU HK' },
+            
+            // India
+            'iiserkol.ac.in': { lat: 22.9547, lon: 88.5312, name: 'IISER Kolkata' },
+            'iisermohali.ac.in': { lat: 30.6656, lon: 76.7292, name: 'IISER Mohali' },
+            
+            // South America
+            'usp.br': { lat: -23.5558, lon: -46.7319, name: 'São Paulo' },
+            
+            // Africa
+            'wits.ac.za': { lat: -26.1929, lon: 28.0305, name: 'Witwatersrand' }
+        };
+
+        // Geocode using built-in database with enhanced matching
+        function geocodeBuiltin(affiliation, country, email = '') {
+            // Strategy 1: Try email domain first (most accurate!)
+            if (email) {
+                const emailLower = email.toLowerCase();
+                for (const [domain, coords] of Object.entries(EMAIL_DOMAIN_HINTS)) {
+                    if (emailLower.includes(domain)) {
+                        console.log(`  ✓ Matched via email domain: ${domain}`);
+                        return coords;
+                    }
+                }
+            }
+            
+            // Strategy 2: Normalize and search affiliation in university database
+            const normalize = (str) => str.toLowerCase().trim()
+                .replace(/[,.\(\)]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .replace(/department of.*$/i, '')
+                .replace(/school of.*$/i, '')
+                .replace(/college of.*$/i, '')
+                .replace(/institute of.*$/i, '')
+                .replace(/faculty of.*$/i, '')
+                .replace(/center for.*$/i, '')
+                .replace(/centre for.*$/i, '')
+                .trim();
+            
+            const normalizedAffiliation = normalize(affiliation);
+            const normalizedCountry = normalize(country);
+            
+            // Get expected country code for validation
+            const expectedCountryCode = getCountryCodeFromName(country);
+            
+            // Try exact or partial match in LOCATION_DATABASE
+            for (const [key, coords] of Object.entries(LOCATION_DATABASE)) {
+                const normalizedKey = normalize(key);
+                
+                // Exact match
+                if (normalizedAffiliation === normalizedKey) {
+                    // CRITICAL: Verify country matches if we have country info
+                    if (country && coords.city && !isCountryMatch(coords.city, expectedCountryCode, normalizedCountry)) {
+                        console.log(`  ⚠ Exact match "${key}" but country mismatch, skipping`);
+                        continue;
+                    }
+                    console.log(`  ✓ Exact match: ${key}`);
+                    return coords;
+                }
+                
+                // Contains match - but ONLY if significant overlap
+                const affWords = normalizedAffiliation.split(' ').filter(w => w.length > 3);
+                const keyWords = normalizedKey.split(' ').filter(w => w.length > 3);
+                
+                // Count matching words
+                const matches = affWords.filter(w => keyWords.includes(w));
+                const matchRatio = matches.length / Math.max(keyWords.length, 1);
+                
+                // Require at least 60% word match AND at least 2 words matching
+                if (matches.length >= 2 && matchRatio >= 0.6) {
+                    // CRITICAL: Verify country matches to prevent wrong continent assignments!
+                    if (country && coords.city && !isCountryMatch(coords.city, expectedCountryCode, normalizedCountry)) {
+                        console.log(`  ⚠ Word match "${key}" but country mismatch, skipping`);
+                        continue;
+                    }
+                    console.log(`  ✓ Multi-word match (${matches.length}/${keyWords.length} words): ${key}`);
+                    return coords;
+                }
+            }
+            
+            // Strategy 3: Fallback to country centroid (ONLY as last resort)
+            if (COUNTRY_FALLBACK[normalizedCountry]) {
+                console.log(`  ⚠ Fallback to country centroid: ${country}`);
+                return COUNTRY_FALLBACK[normalizedCountry];
+            }
+            
+            return null;
+        }
+        
+        // Helper to check if a location matches the expected country
+        function isCountryMatch(city, expectedCountryCode, normalizedCountry) {
+            if (!city || !expectedCountryCode) return true; // Can't verify, allow it
+            
+            const cityLower = city.toLowerCase();
+            
+            // Define cities by country
+            const countryCities = {
+                'us': ['seattle', 'washington', 'michigan', 'pittsburgh', 'diego', 'angeles', 'francisco', 
+                       'boston', 'york', 'chicago', 'atlanta', 'dallas', 'austin', 'houston', 'miami',
+                       'denver', 'portland', 'phoenix', 'columbus', 'philadelphia', 'baltimore',
+                       'stanford', 'berkeley', 'cambridge', 'princeton', 'buffalo', 'knoxville',
+                       'santa cruz', 'northridge', 'stony brook', 'notre dame', 'fayetteville', 'rochester'],
+                'cn': ['beijing', 'shanghai', 'guangzhou', 'shenzhen', 'hangzhou', 'chengdu', 'wuhan',
+                       'tianjin', 'nanjing', 'hefei', "xi'an", 'changping', 'harbin'],
+                'it': ['milan', 'rome', 'florence', 'venice', 'naples', 'turin', 'bologna', 'genoa',
+                       'pisa', 'trieste', 'brescia', 'padua', 'palermo', 'catania', 'verona'],
+                'de': ['berlin', 'munich', 'hamburg', 'frankfurt', 'cologne', 'stuttgart', 'heidelberg',
+                       'aachen', 'karlsruhe', 'göttingen'],
+                'fr': ['paris', 'lyon', 'marseille', 'toulouse', 'bordeaux', 'lille', 'strasbourg',
+                       'palaiseau', 'troyes'],
+                'gb': ['london', 'manchester', 'edinburgh', 'glasgow', 'birmingham', 'cambridge',
+                       'oxford', 'nottingham', 'cardiff', 'strathclyde'],
+                'ca': ['toronto', 'vancouver', 'montreal', 'ottawa', 'calgary', 'edmonton', 'waterloo'],
+                'jp': ['tokyo', 'osaka', 'kyoto', 'yokohama', 'kobe', 'pohang'],
+                'ch': ['zurich', 'geneva', 'basel', 'lausanne', 'bern', 'villigen'],
+                'au': ['sydney', 'melbourne', 'brisbane', 'perth', 'adelaide', 'canberra'],
+                'kr': ['seoul', 'busan', 'incheon', 'daegu', 'pohang'],
+                'nl': ['amsterdam', 'rotterdam', 'delft', 'leiden', 'utrecht', 'eindhoven'],
+                'es': ['madrid', 'barcelona', 'valencia', 'seville', 'pamplona'],
+                'se': ['stockholm', 'gothenburg', 'lund', 'uppsala'],
+                'dk': ['copenhagen', 'aarhus'],
+                'no': ['oslo', 'trondheim', 'bergen'],
+                'at': ['vienna', 'salzburg', 'innsbruck'],
+                'be': ['brussels', 'ghent', 'leuven', 'antwerp'],
+                'in': ['delhi', 'mumbai', 'bangalore', 'kolkata', 'chennai', 'pune', 'mohali', 'kharagpur'],
+                'sg': ['singapore'],
+                'br': ['são paulo', 'rio', 'brasília']
+            };
+            
+            // Check if city belongs to expected country
+            const expectedCities = countryCities[expectedCountryCode] || [];
+            for (const expectedCity of expectedCities) {
+                if (cityLower.includes(expectedCity) || expectedCity.includes(cityLower)) {
+                    return true;
+                }
+            }
+            
+            // If we have a city but it's not in our list, be conservative - allow it
+            // (better to allow than to incorrectly reject)
+            return true;
+        }
+        
+        // Helper function to get country code from country name
+        function getCountryCodeFromName(country) {
+            if (!country) return '';
+            const countryLower = country.toLowerCase();
+            const codes = {
+                'italy': 'it', 'italia': 'it',
+                'usa': 'us', 'united states': 'us',
+                'china': 'cn',
+                'japan': 'jp',
+                'germany': 'de',
+                'france': 'fr',
+                'uk': 'gb', 'united kingdom': 'gb',
+                'spain': 'es',
+                'canada': 'ca',
+                'switzerland': 'ch',
+                'netherlands': 'nl', 'the netherlands': 'nl',
+                'belgium': 'be',
+                'sweden': 'se',
+                'denmark': 'dk',
+                'norway': 'no',
+                'austria': 'at',
+                'australia': 'au',
+                'brazil': 'br',
+                'india': 'in',
+                'singapore': 'sg',
+                'south korea': 'kr', 'korea': 'kr',
+                'poland': 'pl',
+                'ireland': 'ie',
+                'portugal': 'pt',
+                'greece': 'gr',
+                'hong kong': 'hk'
+            };
+            
+            for (const [name, code] of Object.entries(codes)) {
+                if (countryLower.includes(name)) {
+                    return code;
+                }
+            }
+            return '';
+        }
+
+        // Geocode location using Nominatim API (online) with better queries
+        async function geocodeOnline(affiliation, country) {
+            if (!affiliation || affiliation.trim() === '') return null;
+            
+            // Clean affiliation for better results
+            const cleanAffiliation = affiliation
+                .replace(/\(.*?\)/g, '') // Remove parentheses content
+                .trim();
+            
+            const affiliationLower = cleanAffiliation.toLowerCase();
+            const countryLower = (country || '').toLowerCase();
+            
+            // Build smart queries based on institution type and location
+            const queries = [];
+            
+            // Special handling for known problematic institutions
+            if (affiliationLower.includes('sissa') || affiliationLower.includes('international school for advanced studies')) {
+                queries.push('SISSA Trieste Italy');
+                queries.push('International School for Advanced Studies Trieste');
+            } else if (affiliationLower.includes('abdus salam') || affiliationLower.includes('ictp')) {
+                queries.push('ICTP Trieste Italy');
+                queries.push('Abdus Salam International Centre Theoretical Physics Trieste');
+            } else if (affiliationLower.includes('politecnico') && affiliationLower.includes('milano')) {
+                // Force main campus in Milan city center, NOT Piacenza or other campuses
+                queries.push('Piazza Leonardo da Vinci 32 Milano Italy');
+                queries.push('Politecnico di Milano Leonardo Campus Milan Italy');
+                queries.push('Politecnico Milano city center Italy');
+            } else if (affiliationLower.includes('polimi')) {
+                // PoliMi abbreviation - force Milan main campus
+                queries.push('Piazza Leonardo da Vinci 32 Milano Italy');
+                queries.push('Politecnico di Milano Leonardo Milan Italy');
+            } else if ((affiliationLower.includes('brescia') || affiliationLower.includes('unibs')) && 
+                       !affiliationLower.includes('campus') && 
+                       !affiliationLower.includes('sede')) {
+                // Force main campus in Brescia city center, NOT other campuses
+                queries.push('Via Branze 38 Brescia Italy');
+                queries.push('Universita degli Studi di Brescia city center Italy');
+                queries.push('University of Brescia main campus Italy');
+            } else if (affiliationLower.includes('sant') && affiliationLower.includes('anna')) {
+                queries.push('Scuola Superiore Sant Anna Pisa Italy');
+                queries.push('Sant Anna School Pisa');
+            } else if (affiliationLower.includes('scuola normale')) {
+                queries.push('Scuola Normale Superiore Pisa Italy');
+            } else if (affiliationLower.includes('padova') || affiliationLower.includes('padua')) {
+                queries.push('University of Padua Italy');
+                queries.push('Universita di Padova Italy');
+            } else if (affiliationLower.includes('federico') && (affiliationLower.includes('napoli') || affiliationLower.includes('naples'))) {
+                queries.push('University of Naples Federico II Italy');
+                queries.push('Universita Federico II Napoli');
+            } else if (countryLower.includes('ital')) {
+                // For other Italian institutions, try to extract city name
+                const italianCities = ['milano', 'milan', 'roma', 'rome', 'torino', 'turin', 'firenze', 'florence', 
+                                      'bologna', 'napoli', 'naples', 'genova', 'genoa', 'pisa', 'trieste', 
+                                      'venezia', 'venice', 'padova', 'padua', 'brescia', 'palermo', 'catania'];
+                
+                let cityFound = null;
+                for (const city of italianCities) {
+                    if (affiliationLower.includes(city)) {
+                        cityFound = city;
+                        break;
+                    }
+                }
+                
+                if (cityFound) {
+                    queries.push(`${cleanAffiliation} ${cityFound} Italy`);
+                    queries.push(`${cleanAffiliation}, Italy`);
+                } else {
+                    queries.push(`${cleanAffiliation}, Italy`);
+                    queries.push(`${cleanAffiliation} university Italy`);
+                }
+            } else {
+                // Standard queries for non-Italian institutions
+                if (country) {
+                    queries.push(`${cleanAffiliation}, ${country}`);
+                }
+                queries.push(cleanAffiliation);
+                
+                // Try with "university" suffix if it's likely a university
+                if ((affiliationLower.includes('university') || 
+                     affiliationLower.includes('institut') ||
+                     affiliationLower.includes('college')) && country) {
+                    queries.push(`${cleanAffiliation} ${country}`);
+                }
+            }
+            
+            // Try each query in order
+            for (const query of queries) {
+                const countryCode = getCountryCodeFromName(country);
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1${countryCode ? '&countrycodes=' + countryCode : ''}`;
+                
+                try {
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'User-Agent': 'EditorialAppointmentsMap/1.0'
+                        }
+                    });
+                    
+                    if (!response.ok) continue;
+                    
+                    const data = await response.json();
+                    
+                    if (data && data.length > 0) {
+                        // Verify the result is in the expected country
+                        const result = data[0];
+                        const resultCountry = (result.display_name || '').toLowerCase();
+                        const resultLocation = (result.display_name || '').toLowerCase();
+                        
+                        // For Italy, double-check we got an Italian result
+                        if (countryLower.includes('ital') && !resultCountry.includes('ital')) {
+                            console.log(`  ⚠ Result not in Italy, skipping: ${result.display_name}`);
+                            continue;
+                        }
+                        
+                        // For China, verify we got a Chinese result
+                        if (countryLower.includes('china') && !resultCountry.includes('china') && !resultCountry.includes('中国')) {
+                            console.log(`  ⚠ Result not in China, skipping: ${result.display_name}`);
+                            continue;
+                        }
+                        
+                        // SPECIFIC VALIDATION for institutions with multiple campuses
+                        // Politecnico di Milano should be in Milan/Milano, NOT Piacenza or Como
+                        if ((affiliationLower.includes('politecnico') && affiliationLower.includes('milano')) || 
+                            affiliationLower.includes('polimi')) {
+                            if (resultLocation.includes('piacenza') || resultLocation.includes('como') || 
+                                resultLocation.includes('lecco') || resultLocation.includes('cremona')) {
+                                console.log(`  ⚠ Polimi result in wrong city (${result.display_name}), skipping`);
+                                continue;
+                            }
+                            if (!resultLocation.includes('milan') && !resultLocation.includes('milano')) {
+                                console.log(`  ⚠ Polimi result not in Milan (${result.display_name}), skipping`);
+                                continue;
+                            }
+                        }
+                        
+                        // University of Brescia should be in Brescia city, NOT other locations
+                        if ((affiliationLower.includes('brescia') || affiliationLower.includes('unibs')) &&
+                            affiliationLower.includes('universit')) {
+                            if (!resultLocation.includes('brescia')) {
+                                console.log(`  ⚠ Brescia result not in Brescia city (${result.display_name}), skipping`);
+                                continue;
+                            }
+                        }
+                        
+                        console.log(`  ✓ Online geocoding succeeded: ${query} → ${result.display_name}`);
+                        return {
+                            lat: parseFloat(result.lat),
+                            lon: parseFloat(result.lon),
+                            display_name: result.display_name
+                        };
+                    }
+                } catch (error) {
+                    console.error(`  ✗ Online query failed: ${query}`, error);
+                }
+                
+                // Rate limit between attempts
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+            
+            return null;
+        }
+
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([20, 0], 2); // World view
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+            
+            // Initialize marker cluster group if available
+            if (typeof L.markerClusterGroup !== 'undefined') {
+                markerClusterGroup = L.markerClusterGroup({
+                    maxClusterRadius: 50,
+                    spiderfyOnMaxZoom: true,
+                    showCoverageOnHover: false,
+                    zoomToBoundsOnClick: true
+                });
+                map.addLayer(markerClusterGroup);
+                console.log('✓ Marker clustering enabled');
+            } else {
+                // Fallback: create a simple layer group
+                markerClusterGroup = L.layerGroup();
+                map.addLayer(markerClusterGroup);
+                console.warn('⚠ Marker clustering not available, using basic layer group');
+            }
+        }
+
+        // Calculate distance between two points (Haversine formula)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                     Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // Show message
+        function showMessage(message, type = 'success') {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = type;
+            messageDiv.textContent = message;
+            messageDiv.style.display = 'block';
+        }
+
+        // Update statistics
+        function updateStats() {
+            document.getElementById('totalLocations').textContent = allEditors.length;
+            document.getElementById('geocodedLocations').textContent = 
+                allEditors.filter(e => e.lat && e.lon).length;
+            document.getElementById('visibleLocations').textContent = markers.length;
+        }
+
+        // Clear markers
+        function clearMarkers() {
+            markerClusterGroup.clearLayers();
+            markers = [];
+        }
+
+        // Add marker to map
+        function addMarker(editor) {
+            if (editor.lat && editor.lon) {
+                const popupContent = `
+                    <div class="popup-title">${editor.editor}</div>
+                    ${editor.role ? `<div class="popup-field"><strong>Role:</strong> ${editor.role}</div>` : ''}
+                    ${editor.journal ? `<div class="popup-field"><strong>Journal:</strong> ${editor.journal}</div>` : ''}
+                    ${editor.affiliation ? `<div class="popup-field"><strong>Affiliation:</strong> ${editor.affiliation}</div>` : ''}
+                    ${editor.country ? `<div class="popup-field"><strong>Country:</strong> ${editor.country}</div>` : ''}
+                    ${editor.status ? `<div class="popup-field"><strong>Status:</strong> ${editor.status}</div>` : ''}
+                    ${editor.email ? `<div class="popup-field"><strong>Email:</strong> ${editor.email}</div>` : ''}
+                    ${editor.termEnd ? `<div class="popup-field"><strong>Term End:</strong> ${editor.termEnd}</div>` : ''}
+                `;
+                
+                const marker = L.marker([editor.lat, editor.lon])
+                    .bindPopup(popupContent);
+                
+                marker.editorData = editor;
+                markers.push(marker);
+                markerClusterGroup.addLayer(marker); // Add to cluster group
+            }
+        }
+
+        // Populate filter dropdowns
+        function populateFilters() {
+            const journals = new Set();
+            const roles = new Set();
+            const countries = new Set();
+            const statuses = new Set();
+            
+            allEditors.forEach(editor => {
+                if (editor.journal) journals.add(editor.journal);
+                if (editor.role) roles.add(editor.role);
+                if (editor.country) countries.add(editor.country);
+                if (editor.status) statuses.add(editor.status);
+            });
+            
+            populateSelect('filterJournal', Array.from(journals).sort());
+            populateSelect('filterRole', Array.from(roles).sort());
+            populateSelect('filterCountry', Array.from(countries).sort());
+            populateSelect('filterStatus', Array.from(statuses).sort());
+        }
+        
+        function populateSelect(id, options) {
+            const select = document.getElementById(id);
+            select.innerHTML = '<option value="">All</option>';
+            options.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt;
+                option.textContent = opt;
+                select.appendChild(option);
+            });
+        }
+
+        // Apply filters
+        function applyFilters() {
+            clearMarkers();
+            
+            const filtered = allEditors.filter(editor => {
+                if (currentFilters.journal && editor.journal !== currentFilters.journal) return false;
+                if (currentFilters.role && editor.role !== currentFilters.role) return false;
+                if (currentFilters.country && editor.country !== currentFilters.country) return false;
+                if (currentFilters.status && editor.status !== currentFilters.status) return false;
+                return true;
+            });
+            
+            filtered.forEach(editor => addMarker(editor));
+            
+            updateStats();
+            
+            if (markers.length > 0) {
+                const bounds = markerClusterGroup.getBounds();
+                if (bounds.isValid()) {
+                    map.fitBounds(bounds.pad(0.1));
+                }
+            }
+        }
+
+        // Process and geocode editors
+        async function processEditors(parsedData) {
+            if (parsedData.data.length < 2) {
+                showMessage('CSV file appears to be empty', 'error');
+                return;
+            }
+            
+            const rows = parsedData.data;
+            const headers = rows[0].map(h => h.toLowerCase().trim());
+            const editors = [];
+            
+            console.log('CSV Headers:', headers);
+            console.log('Total rows:', rows.length);
+            
+            // Find column indices dynamically
+            const colIndices = {
+                editor: headers.findIndex(h => h.includes('editor') && !h.includes('email') && !h.includes('country') && !h.includes('affiliation') && !h.includes('website')),
+                email: headers.findIndex(h => h.includes('email')),
+                journal: headers.findIndex(h => h === 'journal'),
+                role: headers.findIndex(h => h === 'role'),
+                country: headers.findIndex(h => h.includes('country')),
+                affiliation: headers.findIndex(h => h.includes('affiliation')),
+                website: headers.findIndex(h => h.includes('website')),
+                status: headers.findIndex(h => h === 'status'),
+                termEnd: headers.findIndex(h => h.includes('term end'))
+            };
+            
+            console.log('Column mapping:', colIndices);
+            
+            // Validate that we found the essential columns
+            if (colIndices.editor === -1 || colIndices.country === -1 || colIndices.affiliation === -1) {
+                showMessage('Error: Could not find required columns (Editor, Country, Affiliation). Please check CSV format.', 'error');
+                console.error('Missing required columns. Found:', colIndices);
+                return;
+            }
+            
+            // Parse data rows
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (row.length < 3) continue;
+                
+                const affiliation = colIndices.affiliation !== -1 && row[colIndices.affiliation] ? row[colIndices.affiliation].trim() : '';
+                const country = colIndices.country !== -1 && row[colIndices.country] ? row[colIndices.country].trim() : '';
+                
+                if (!affiliation && !country) continue;
+                
+                const editor = {
+                    editor: colIndices.editor !== -1 && row[colIndices.editor] ? row[colIndices.editor].trim() : '',
+                    status: colIndices.status !== -1 && row[colIndices.status] ? row[colIndices.status].trim() : 'Active',
+                    email: colIndices.email !== -1 && row[colIndices.email] ? row[colIndices.email].trim() : '',
+                    journal: colIndices.journal !== -1 && row[colIndices.journal] ? row[colIndices.journal].trim() : '',
+                    role: colIndices.role !== -1 && row[colIndices.role] ? row[colIndices.role].trim() : '',
+                    country: country,
+                    affiliation: affiliation,
+                    website: colIndices.website !== -1 && row[colIndices.website] ? row[colIndices.website].trim() : '',
+                    termEnd: colIndices.termEnd !== -1 && row[colIndices.termEnd] ? row[colIndices.termEnd].trim() : '',
+                    lat: null,
+                    lon: null
+                };
+                
+                editors.push(editor);
+            }
+            
+            console.log(`Parsed ${editors.length} editors`);
+            
+            if (editors.length === 0) {
+                showMessage('No valid editor entries found in CSV', 'error');
+                return;
+            }
+            
+            allEditors = editors;
+            
+            // Get selected geocoding method
+            const useOnline = document.querySelector('input[name="geocodeMethod"]:checked').value === 'online';
+            
+            showMessage(`Processing ${editors.length} editorial appointments using ${useOnline ? 'online' : 'built-in'} geocoding...`, 'success');
+            
+            const loading = document.getElementById('loading');
+            const progressText = document.getElementById('progressText');
+            const progressFill = document.getElementById('progressFill');
+            loading.classList.add('active');
+            
+            let geocoded = 0;
+            
+            for (let i = 0; i < editors.length; i++) {
+                const editor = editors[i];
+                progressText.textContent = `${i + 1}/${editors.length} (${geocoded} successful)`;
+                progressFill.style.width = `${((i + 1) / editors.length) * 100}%`;
+                
+                let result = null;
+                
+                if (useOnline) {
+                    // Online geocoding
+                    result = await geocodeOnline(editor.affiliation, editor.country);
+                    
+                    // Fallback to built-in if online fails
+                    if (!result) {
+                        console.log(`  ⚠ Online failed, trying built-in database...`);
+                        result = geocodeBuiltin(editor.affiliation, editor.country, editor.email);
+                    }
+                    
+                    // Rate limiting for online
+                    await new Promise(resolve => setTimeout(resolve, 1100));
+                } else {
+                    // Built-in geocoding with email hints
+                    result = geocodeBuiltin(editor.affiliation, editor.country, editor.email);
+                }
+                
+                if (result) {
+                    editor.lat = result.lat;
+                    editor.lon = result.lon;
+                    geocoded++;
+                }
+            }
+            
+            loading.classList.remove('active');
+            
+            populateFilters();
+            applyFilters();
+            
+            if (geocoded === 0) {
+                showMessage(`Warning: Could not geocode any locations. Try switching geocoding methods.`, 'warning');
+            } else {
+                showMessage(`Successfully geocoded ${geocoded} of ${editors.length} locations!`, 'success');
+            }
+        }
+
+        // Filter locations by radius
+        async function filterByRadius() {
+            const searchLocation = document.getElementById('searchLocation').value.trim();
+            const radius = parseFloat(document.getElementById('radius').value);
+            
+            if (!searchLocation) {
+                showMessage('Please enter a search location', 'error');
+                return;
+            }
+            
+            if (!allEditors.length) {
+                showMessage('Please upload a CSV file first', 'error');
+                return;
+            }
+            
+            showMessage('Searching...', 'success');
+            
+            // Try built-in first, then online
+            let centerPoint = geocodeBuiltin(searchLocation, '', '');
+            
+            if (!centerPoint) {
+                centerPoint = await geocodeOnline(searchLocation, '');
+            }
+            
+            if (!centerPoint) {
+                showMessage('Location not found. Please try a different search term.', 'error');
+                return;
+            }
+            
+            // Remove existing radius circle and search marker
+            if (radiusCircle) map.removeLayer(radiusCircle);
+            if (searchMarker) map.removeLayer(searchMarker);
+            
+            // Add search marker
+            searchMarker = L.marker([centerPoint.lat, centerPoint.lon], {
+                icon: L.icon({
+                    iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNSIgaGVpZ2h0PSI0MSI+PHBhdGggZD0iTTEyLjUgMEMxOS40IDAgMjUgNS42IDI1IDEyLjVjMCA2LjktMTIuNSAyOC41LTEyLjUgMjguNVMwIDE5LjQgMCAxMi41QzAgNS42IDUuNiAwIDEyLjUgMHoiIGZpbGw9IiNmNDQzMzYiLz48Y2lyY2xlIGN4PSIxMi41IiBjeT0iMTIuNSIgcj0iNSIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41]
+                })
+            }).bindPopup(`<strong>Search Center:</strong><br>${searchLocation}`).addTo(map);
+            
+            // Add radius circle
+            radiusCircle = L.circle([centerPoint.lat, centerPoint.lon], {
+                color: '#2196F3',
+                fillColor: '#2196F3',
+                fillOpacity: 0.1,
+                radius: radius * 1000
+            }).addTo(map);
+            
+            // Filter and show only markers within radius
+            clearMarkers();
+            let withinCount = 0;
+            
+            allEditors.forEach(editor => {
+                // Apply current filters
+                if (currentFilters.journal && editor.journal !== currentFilters.journal) return;
+                if (currentFilters.role && editor.role !== currentFilters.role) return;
+                if (currentFilters.country && editor.country !== currentFilters.country) return;
+                if (currentFilters.status && editor.status !== currentFilters.status) return;
+                
+                if (editor.lat && editor.lon) {
+                    const distance = calculateDistance(
+                        centerPoint.lat,
+                        centerPoint.lon,
+                        editor.lat,
+                        editor.lon
+                    );
+                    
+                    if (distance <= radius) {
+                        addMarker(editor);
+                        withinCount++;
+                    }
+                }
+            });
+            
+            map.fitBounds(radiusCircle.getBounds());
+            
+            document.getElementById('withinRadius').textContent = withinCount;
+            updateStats();
+            showMessage(`Found ${withinCount} editors within ${radius}km of ${searchLocation}`, 'success');
+        }
+
+        // Reset map
+        function resetMap() {
+            if (radiusCircle) map.removeLayer(radiusCircle);
+            if (searchMarker) map.removeLayer(searchMarker);
+            document.getElementById('withinRadius').textContent = '-';
+            
+            applyFilters();
+            showMessage('Map reset - showing all filtered results', 'success');
+        }
+
+        // Event listeners
+        document.getElementById('csvFile').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            Papa.parse(file, {
+                complete: processEditors,
+                skipEmptyLines: true,
+                error: (error) => {
+                    showMessage('Error parsing CSV: ' + error.message, 'error');
+                }
+            });
+        });
+
+        document.getElementById('searchBtn').addEventListener('click', filterByRadius);
+        document.getElementById('resetBtn').addEventListener('click', resetMap);
+
+        document.getElementById('searchLocation').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') filterByRadius();
+        });
+
+        // Filter event listeners
+        ['filterJournal', 'filterRole', 'filterCountry', 'filterStatus'].forEach(id => {
+            document.getElementById(id).addEventListener('change', (e) => {
+                const filterType = id.replace('filter', '').toLowerCase();
+                currentFilters[filterType] = e.target.value;
+                applyFilters();
+            });
+        });
+
+        // Initialize
+        initMap();
+        showMessage('Ready! Upload your CSV file and choose a geocoding method.', 'info');
+        } // End initializeApp
+    </script>
+    
+    <div class="credits">
+        Developed by <a href="https://github.com/teowaits" target="_blank" rel="noopener">teowaits</a> - MIT License
+    </div>
+</body>
+</html>
