@@ -16,7 +16,7 @@ A web application that visualizes the geographic distribution of editorial board
 
 ## Quick Start
 
-1. Download `editorial-map-fixed.html`
+1. Download `index.html`
 2. Open the file in your web browser (Chrome, Firefox, Safari, Edge)
 3. Upload your CSV file with editor information
 4. Select geocoding method (Built-in recommended)
@@ -108,7 +108,7 @@ Both geocoding methods enforce country validation:
 ### Search Tips
 
 - **Search by city name**: Use "Milan" instead of "Milan, Italy" for better results
-- **Radius search**: Start with 100km and adjust as needed
+- **Radius search**: Default is 50km — good for city-scale conference visit planning; adjust as needed
 - **Use filters**: Combine radius search with journal/role filters for targeted results
 - **Reset map**: Click "Reset Map" to clear radius search and show all editors
 

@@ -346,7 +346,7 @@
                 
                 <div class="control-group small">
                     <label for="radius">Radius (km)</label>
-                    <input type="number" id="radius" value="100" min="1" max="20000">
+                    <input type="number" id="radius" value="50" min="1" max="20000">
                 </div>
                 
                 <div class="control-group small">
@@ -460,7 +460,7 @@
         function initializeApp() {
         let map;
         let markers = [];
-        let markerClusterGroup; // For clustering overlapping markers
+        const layers = {}; // Named layer groups — editors here, breweries/coffee added in Part 2
         let allEditors = [];
         let radiusCircle = null;
         let searchMarker = null;
@@ -1291,18 +1291,18 @@
             
             // Initialize marker cluster group if available
             if (typeof L.markerClusterGroup !== 'undefined') {
-                markerClusterGroup = L.markerClusterGroup({
+                layers.editors = L.markerClusterGroup({
                     maxClusterRadius: 50,
                     spiderfyOnMaxZoom: true,
                     showCoverageOnHover: false,
                     zoomToBoundsOnClick: true
                 });
-                map.addLayer(markerClusterGroup);
+                map.addLayer(layers.editors);
                 console.log('✓ Marker clustering enabled');
             } else {
                 // Fallback: create a simple layer group
-                markerClusterGroup = L.layerGroup();
-                map.addLayer(markerClusterGroup);
+                layers.editors = L.layerGroup();
+                map.addLayer(layers.editors);
                 console.warn('⚠ Marker clustering not available, using basic layer group');
             }
         }
@@ -1337,7 +1337,7 @@
 
         // Clear markers
         function clearMarkers() {
-            markerClusterGroup.clearLayers();
+            layers.editors.clearLayers();
             markers = [];
         }
 
@@ -1360,7 +1360,7 @@
                 
                 marker.editorData = editor;
                 markers.push(marker);
-                markerClusterGroup.addLayer(marker); // Add to cluster group
+                layers.editors.addLayer(marker);
             }
         }
 
@@ -1412,7 +1412,7 @@
             updateStats();
             
             if (markers.length > 0) {
-                const bounds = markerClusterGroup.getBounds();
+                const bounds = layers.editors.getBounds();
                 if (bounds.isValid()) {
                     map.fitBounds(bounds.pad(0.1));
                 }
