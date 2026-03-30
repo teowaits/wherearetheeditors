@@ -413,48 +413,34 @@
         </div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script>
-        // Wait for libraries to load with retry
-        function waitForLibraries(callback, attempt = 0) {
-            if (typeof L !== 'undefined' && typeof Papa !== 'undefined') {
-                // Give an extra moment for markerCluster plugin to attach
-                setTimeout(() => {
-                    if (typeof L.markerClusterGroup !== 'undefined') {
-                        callback();
-                    } else {
-                        console.warn('MarkerCluster not loaded, retrying...');
-                        if (attempt < 50) {
-                            waitForLibraries(callback, attempt + 1);
-                        } else {
-                            // Proceed anyway - we'll handle it
-                            callback();
-                        }
-                    }
-                }, 100);
-            } else if (attempt < 50) { // Try for 5 seconds
-                setTimeout(() => waitForLibraries(callback, attempt + 1), 100);
-            } else {
-                // Show user-friendly error
-                const message = document.getElementById('message');
-                if (message) {
-                    message.className = 'error';
-                    message.innerHTML = '<strong>⚠️ Libraries failed to load.</strong><br>' +
-                        'Please ensure you have an active internet connection and refresh the page.<br>' +
-                        'Required libraries: Leaflet, PapaParse, and Leaflet.markercluster';
-                    message.style.display = 'block';
-                }
-                console.error('Required libraries failed to load from CDN.');
-                console.error('Leaflet available:', typeof L !== 'undefined');
-                console.error('PapaParse available:', typeof Papa !== 'undefined');
-            }
+        function loadScript(url) {
+            return new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = url;
+                s.onload = resolve;
+                s.onerror = () => reject(new Error('Failed to load: ' + url));
+                document.head.appendChild(s);
+            });
         }
-        
-        // Start when DOM is ready
+
+        function showLoadError(msg) {
+            const el = document.getElementById('message');
+            if (el) {
+                el.className = 'error';
+                el.innerHTML = '<strong>&#9888;&#65039; Libraries failed to load.</strong><br>' +
+                    msg + '<br>Please ensure you have an active internet connection and refresh the page.';
+                el.style.display = 'block';
+            }
+            console.error(msg);
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
-            waitForLibraries(initializeApp);
+            loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js')
+                .then(() => loadScript('https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js'))
+                .then(() => loadScript('https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js'))
+                .then(() => initializeApp())
+                .catch(err => showLoadError(err.message));
         });
         
         function initializeApp() {
