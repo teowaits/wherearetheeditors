@@ -50,6 +50,7 @@
         .control-group {
             flex: 1;
             min-width: 200px;
+            position: relative;
         }
         
         .control-group.small {
@@ -283,6 +284,38 @@
         .credits a:hover {
             text-decoration: underline;
         }
+
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            z-index: 1001;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        .autocomplete-item {
+            padding: 9px 12px;
+            font-size: 13px;
+            color: #333;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            line-height: 1.4;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item:hover,
+        .autocomplete-item.active {
+            background: #e3f2fd;
+        }
     </style>
 </head>
 <body>
@@ -294,18 +327,18 @@
             <ol style="line-height: 1.8; color: #555; margin-left: 20px;">
                 <li><strong>Select Geocoding Method:</strong>
                     <ul style="margin-top: 5px; margin-left: 20px;">
-                        <li>✅ <strong>Built-in Database</strong> (recommended) - Fast, works offline, geocodes 200+ locations instantly</li>
-                        <li><strong>Online Geocoding</strong> - Slower (up to 5 minutes), more accurate, may fail due to browser restrictions</li>
+                        <li>✅ <strong>Online Geocoding</strong> (recommended) — Slower (a few minutes for large lists), but accurate for any institution worldwide</li>
+                        <li><strong>Built-in Database</strong> — Instant and works offline, but only covers the ~200 most common research institutions. Editors from smaller or regional universities will be pinned to their country centre instead of their actual city.</li>
                     </ul>
                 </li>
                 <li><strong>Download the Editorial Database CSV file</strong> and upload it using the file selector below</li>
-                <li><strong>Wait for geocoding</strong> - Built-in method completes instantly; online method takes several minutes</li>
-                <li><strong>Filter by Location:</strong> Enter a city name in the search box (e.g., "Milan" not "Milan, Italy") and set your desired radius in kilometers</li>
+                <li><strong>Wait for geocoding</strong> — Online method processes one editor per second (e.g. ~3 min for 200 editors). Built-in is instant but less complete.</li>
+                <li><strong>Filter by Location:</strong> Start typing a city or place name in the search box — a dropdown will suggest matches. Pick one, set your radius, then click Search & Filter.</li>
                 <li><strong>Use Additional Filters:</strong> Filter by Journal, Role, Country, or Status to narrow down your results</li>
                 <li><strong>Find Editors & EAB to Visit!</strong> Click on map markers to see full editor details including contact information</li>
             </ol>
             <p style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 4px; color: #1565C0;">
-                💡 <strong>Pro Tip:</strong> Start with a city name (not country) for more accurate radius searches. Example: Search "Austin" with 100km radius instead of "Texas".
+                💡 <strong>Pro Tip:</strong> Use Online Geocoding for the most accurate results — Built-in mode silently places unrecognised institutions at the centre of their country, which will skew your radius searches. If your CSV includes a <strong>City</strong> column, accuracy improves further regardless of method.
             </p>
         </div>
         
@@ -316,18 +349,18 @@
                 <div class="control-group">
                     <label for="csvFile">Upload Editorial Appointments CSV</label>
                     <input type="file" id="csvFile" accept=".csv">
-                    <div class="file-info">Required columns: Editor, Journal, Role, Country, Affiliation (Email and Website optional)</div>
+                    <div class="file-info">Required columns: Editor, Journal, Role, Country, Affiliation — Optional (improves accuracy): City, Email, Website</div>
                 </div>
             </div>
             
             <div class="geocode-method">
                 <label>
-                    <input type="radio" name="geocodeMethod" value="builtin" checked>
-                    Use Built-in Database (Fast, works offline)
+                    <input type="radio" name="geocodeMethod" value="online" checked>
+                    ✅ Online Geocoding <span style="color:#757575; font-weight:400;">(recommended — accurate for any institution, ~1 s per editor)</span>
                 </label>
                 <label>
-                    <input type="radio" name="geocodeMethod" value="online">
-                    Use Online Geocoding (Slow, more accurate, requires internet)
+                    <input type="radio" name="geocodeMethod" value="builtin">
+                    Built-in Database <span style="color:#757575; font-weight:400;">(instant, offline — only ~200 major institutions; others fall back to country centre)</span>
                 </label>
             </div>
             
@@ -450,6 +483,7 @@
         let allEditors = [];
         let radiusCircle = null;
         let searchMarker = null;
+        let resolvedSearchCoords = null; // { lat, lon, label } set by autocomplete; null = must geocode
         let currentFilters = {
             journal: '',
             role: '',
@@ -935,7 +969,7 @@
         };
 
         // Geocode using built-in database with enhanced matching
-        function geocodeBuiltin(affiliation, country, email = '') {
+        function geocodeBuiltin(affiliation, country, email = '', city = '') {
             // Strategy 1: Try email domain first (most accurate!)
             if (email) {
                 const emailLower = email.toLowerCase();
@@ -1001,10 +1035,14 @@
                 }
             }
             
-            // Strategy 3: Fallback to country centroid (ONLY as last resort)
-            if (COUNTRY_FALLBACK[normalizedCountry]) {
+            // Strategy 3: Fallback to country centroid — but only if no city is provided.
+            // When city is known, a missing marker is less misleading than a centroid placement.
+            if (!city && COUNTRY_FALLBACK[normalizedCountry]) {
                 console.log(`  ⚠ Fallback to country centroid: ${country}`);
                 return COUNTRY_FALLBACK[normalizedCountry];
+            }
+            if (city) {
+                console.log(`  ⚠ Institution not in database; city "${city}" provided — deferring to online geocoder`);
             }
             
             return null;
@@ -1105,19 +1143,27 @@
         }
 
         // Geocode location using Nominatim API (online) with better queries
-        async function geocodeOnline(affiliation, country) {
+        async function geocodeOnline(affiliation, country, city = '') {
             if (!affiliation || affiliation.trim() === '') return null;
-            
+
             // Clean affiliation for better results
             const cleanAffiliation = affiliation
                 .replace(/\(.*?\)/g, '') // Remove parentheses content
                 .trim();
-            
+
             const affiliationLower = cleanAffiliation.toLowerCase();
             const countryLower = (country || '').toLowerCase();
-            
+            const cityClean = city ? city.trim() : '';
+
             // Build smart queries based on institution type and location
             const queries = [];
+
+            // If city is provided, lead with the most specific query
+            if (cityClean && country) {
+                queries.push(`${cleanAffiliation}, ${cityClean}, ${country}`);
+            } else if (cityClean) {
+                queries.push(`${cleanAffiliation}, ${cityClean}`);
+            }
             
             // Special handling for known problematic institutions
             if (affiliationLower.includes('sissa') || affiliationLower.includes('international school for advanced studies')) {
@@ -1188,7 +1234,15 @@
                     queries.push(`${cleanAffiliation} ${country}`);
                 }
             }
-            
+
+            // City-level fallback: if city is provided and all institution queries fail,
+            // resolving at city granularity is far better than a country centroid.
+            if (cityClean && country) {
+                queries.push(`${cityClean}, ${country}`);
+            } else if (cityClean) {
+                queries.push(cityClean);
+            }
+
             // Try each query in order
             for (const query of queries) {
                 const countryCode = getCountryCodeFromName(country);
@@ -1427,6 +1481,7 @@
                 role: headers.findIndex(h => h === 'role'),
                 country: headers.findIndex(h => h.includes('country')),
                 affiliation: headers.findIndex(h => h.includes('affiliation')),
+                city: headers.findIndex(h => h === 'city'),
                 website: headers.findIndex(h => h.includes('website')),
                 status: headers.findIndex(h => h === 'status'),
                 termEnd: headers.findIndex(h => h.includes('term end'))
@@ -1459,6 +1514,7 @@
                     role: colIndices.role !== -1 && row[colIndices.role] ? row[colIndices.role].trim() : '',
                     country: country,
                     affiliation: affiliation,
+                    city: colIndices.city !== -1 && row[colIndices.city] ? row[colIndices.city].trim() : '',
                     website: colIndices.website !== -1 && row[colIndices.website] ? row[colIndices.website].trim() : '',
                     termEnd: colIndices.termEnd !== -1 && row[colIndices.termEnd] ? row[colIndices.termEnd].trim() : '',
                     lat: null,
@@ -1498,19 +1554,19 @@
                 
                 if (useOnline) {
                     // Online geocoding
-                    result = await geocodeOnline(editor.affiliation, editor.country);
-                    
+                    result = await geocodeOnline(editor.affiliation, editor.country, editor.city);
+
                     // Fallback to built-in if online fails
                     if (!result) {
                         console.log(`  ⚠ Online failed, trying built-in database...`);
-                        result = geocodeBuiltin(editor.affiliation, editor.country, editor.email);
+                        result = geocodeBuiltin(editor.affiliation, editor.country, editor.email, editor.city);
                     }
-                    
+
                     // Rate limiting for online
                     await new Promise(resolve => setTimeout(resolve, 1100));
                 } else {
                     // Built-in geocoding with email hints
-                    result = geocodeBuiltin(editor.affiliation, editor.country, editor.email);
+                    result = geocodeBuiltin(editor.affiliation, editor.country, editor.email, editor.city);
                 }
                 
                 if (result) {
@@ -1532,30 +1588,165 @@
             }
         }
 
+        // --- Autocomplete helpers ---
+
+        function debounce(fn, delay) {
+            let timer;
+            return function(...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, args), delay);
+            };
+        }
+
+        function initAutocomplete(inputEl, onSelect) {
+            let dropdown = null;
+            let activeIndex = -1;
+            let dropdownOpen = false;
+            let lastResults = [];
+
+            function removeDropdown() {
+                if (dropdown) { dropdown.remove(); dropdown = null; }
+                activeIndex = -1;
+                dropdownOpen = false;
+            }
+
+            function highlightItem(index) {
+                if (!dropdown) return;
+                dropdown.querySelectorAll('.autocomplete-item')
+                    .forEach((el, i) => el.classList.toggle('active', i === index));
+            }
+
+            function selectItem(item) {
+                inputEl.value = item.display_name;
+                onSelect(parseFloat(item.lat), parseFloat(item.lon), item.display_name);
+                removeDropdown();
+                showMessage('Tip: for conference visits, 5–50 km works well.', 'info');
+            }
+
+            function buildDropdown(results) {
+                removeDropdown();
+                lastResults = results;
+                if (!results.length) return;
+
+                dropdown = document.createElement('div');
+                dropdown.className = 'autocomplete-dropdown';
+
+                results.forEach((item) => {
+                    const el = document.createElement('div');
+                    el.className = 'autocomplete-item';
+                    el.textContent = item.display_name;
+                    el.addEventListener('mousedown', (e) => {
+                        e.preventDefault(); // keep focus on input until selection completes
+                        selectItem(item);
+                    });
+                    dropdown.appendChild(el);
+                });
+
+                inputEl.parentNode.appendChild(dropdown);
+                dropdownOpen = true;
+                activeIndex = -1;
+            }
+
+            let lastFetchTime = 0;
+            const NOMINATIM_MIN_INTERVAL = 1100; // OSM policy: max 1 req/s; 1100ms gives a small margin
+
+            const fetchSuggestions = debounce(async (query) => {
+                if (query.length < 2) { removeDropdown(); return; }
+
+                // Respect Nominatim's 1 req/s rate limit
+                const elapsed = Date.now() - lastFetchTime;
+                if (elapsed < NOMINATIM_MIN_INTERVAL) {
+                    await new Promise(r => setTimeout(r, NOMINATIM_MIN_INTERVAL - elapsed));
+                }
+                // If the query has changed while we were waiting, bail out — a newer call will handle it
+                if (query !== inputEl.value.trim()) return;
+
+                lastFetchTime = Date.now();
+                try {
+                    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`;
+                    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+                    if (!res.ok) {
+                        console.warn(`Nominatim autocomplete: HTTP ${res.status}`);
+                        return;
+                    }
+                    buildDropdown(await res.json());
+                } catch (e) {
+                    // network error — silently skip; user can still type and press Search
+                    console.warn('Nominatim autocomplete fetch error:', e.message);
+                }
+            }, 300);
+
+            inputEl.addEventListener('input', () => {
+                resolvedSearchCoords = null; // text changed — invalidate prior selection
+                fetchSuggestions(inputEl.value.trim());
+            });
+
+            inputEl.addEventListener('keydown', (e) => {
+                if (!dropdownOpen) return;
+                const count = lastResults.length;
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    activeIndex = Math.min(activeIndex + 1, count - 1);
+                    highlightItem(activeIndex);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    activeIndex = Math.max(activeIndex - 1, 0);
+                    highlightItem(activeIndex);
+                } else if (e.key === 'Enter') {
+                    if (activeIndex >= 0 && lastResults[activeIndex]) {
+                        e.preventDefault();
+                        e.stopImmediatePropagation(); // prevent the keypress Enter → filterByRadius
+                        selectItem(lastResults[activeIndex]);
+                    } else {
+                        // no item highlighted — just close dropdown and let search proceed
+                        removeDropdown();
+                    }
+                } else if (e.key === 'Escape') {
+                    removeDropdown();
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!inputEl.contains(e.target) && !(dropdown && dropdown.contains(e.target))) {
+                    removeDropdown();
+                }
+            });
+
+            // Expose for the keypress guard below
+            inputEl._acIsOpen = () => dropdownOpen;
+        }
+
+        // --- End autocomplete helpers ---
+
         // Filter locations by radius
         async function filterByRadius() {
             const searchLocation = document.getElementById('searchLocation').value.trim();
             const radius = parseFloat(document.getElementById('radius').value);
-            
+
             if (!searchLocation) {
                 showMessage('Please enter a search location', 'error');
                 return;
             }
-            
+
             if (!allEditors.length) {
                 showMessage('Please upload a CSV file first', 'error');
                 return;
             }
-            
+
             showMessage('Searching...', 'success');
-            
-            // Try built-in first, then online
-            let centerPoint = geocodeBuiltin(searchLocation, '', '');
-            
-            if (!centerPoint) {
-                centerPoint = await geocodeOnline(searchLocation, '');
+
+            let centerPoint;
+            if (resolvedSearchCoords) {
+                // Autocomplete already resolved the coordinates — skip geocoding
+                centerPoint = resolvedSearchCoords;
+            } else {
+                // Try built-in first, then online
+                centerPoint = geocodeBuiltin(searchLocation, '', '');
+                if (!centerPoint) {
+                    centerPoint = await geocodeOnline(searchLocation, '');
+                }
             }
-            
+
             if (!centerPoint) {
                 showMessage('Location not found. Please try a different search term.', 'error');
                 return;
@@ -1620,7 +1811,9 @@
             if (radiusCircle) map.removeLayer(radiusCircle);
             if (searchMarker) map.removeLayer(searchMarker);
             document.getElementById('withinRadius').textContent = '-';
-            
+            resolvedSearchCoords = null;
+            document.getElementById('searchLocation').value = '';
+
             applyFilters();
             showMessage('Map reset - showing all filtered results', 'success');
         }
@@ -1642,8 +1835,17 @@
         document.getElementById('searchBtn').addEventListener('click', filterByRadius);
         document.getElementById('resetBtn').addEventListener('click', resetMap);
 
-        document.getElementById('searchLocation').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') filterByRadius();
+        const searchLocationEl = document.getElementById('searchLocation');
+
+        initAutocomplete(searchLocationEl, (lat, lon, label) => {
+            resolvedSearchCoords = { lat, lon, label };
+        });
+
+        searchLocationEl.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                if (searchLocationEl._acIsOpen && searchLocationEl._acIsOpen()) return;
+                filterByRadius();
+            }
         });
 
         // Filter event listeners
