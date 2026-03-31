@@ -26,29 +26,29 @@ A web application that visualizes the geographic distribution of editorial board
 ## CSV File Requirements
 
 ### Mandatory Columns
-Your CSV file **must** contain these columns (case-insensitive, any order):
+Your CSV file **must** contain these three columns (case-insensitive, any order):
 
 - **Editor**: Name of the editor
 - **Country**: Editor's country (e.g., "USA", "Italy", "China")
 - **Affiliation**: Institution name (e.g., "Stanford University", "Politecnico di Milano")
-- **Journal**: Journal name
-- **Role**: Editor role (e.g., "Editor-in-Chief", "Associate Editor")
 
-### Optional Columns (improve geocoding accuracy)
+### Optional Columns
 
-- **City**: Editor's city — **strongly recommended**. When provided, editors whose institution is not in the built-in database are placed at the correct city rather than the centre of their country. Makes a significant difference for online geocoding too.
-- **Email**: Email address (used for geocoding hints via domain matching)
+- **City** — **strongly recommended for accuracy**. When provided, editors whose institution is not in the built-in database are placed at the correct city rather than the centre of their country. Makes a significant difference for online geocoding too.
+- **Journal**: Journal name — enables filtering by journal
+- **Role**: Editor role (e.g., "Editor-in-Chief", "Associate Editor") — enables filtering by role
+- **Email**: Email address — used for geocoding hints via domain matching
 - **Website**: Editor's website or profile URL
 - **Status**: Status (e.g., "Active", "Inactive") — defaults to "Active" if omitted
 
 ### CSV Format Example
 
-**Minimal format:**
+**Minimal format (3 mandatory columns):**
 ```csv
-Editor,Country,Affiliation,Journal,Role
-John Smith,USA,Stanford University,Nature,Editor-in-Chief
-Maria Rossi,Italy,Politecnico di Milano,Science,Associate Editor
-Li Wei,China,Peking University,Cell,Editor
+Editor,Country,Affiliation
+John Smith,USA,Stanford University
+Maria Rossi,Italy,Politecnico di Milano
+Li Wei,China,Peking University
 ```
 
 **Full format (best accuracy):**
